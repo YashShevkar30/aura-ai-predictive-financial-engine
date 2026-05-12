@@ -1,15 +1,18 @@
 import json
+import logging
 import sqlite3
 from pathlib import Path
 
 from pydantic import ValidationError
 
 from app.schemas import ExpensePredictionRequest, ExpensePredictionResponse, PredictionHistoryItem
+from app.config import DB_PATH
 
+logger = logging.getLogger(__name__)
 
 class PredictionHistoryStore:
-    def __init__(self, db_path: str = "aura_history.db") -> None:
-        self.db_path = Path(db_path)
+    def __init__(self, db_path: Path = DB_PATH) -> None:
+        self.db_path = db_path
         self._ensure_db()
 
     def _connect(self) -> sqlite3.Connection:
@@ -32,6 +35,7 @@ class PredictionHistoryStore:
             conn.commit()
 
     def save(self, prediction_input: ExpensePredictionRequest, prediction_output: ExpensePredictionResponse) -> None:
+        """Save a prediction request and response pair to sqlite store."""
         with self._connect() as conn:
             conn.execute(
                 """
@@ -44,8 +48,10 @@ class PredictionHistoryStore:
                 ),
             )
             conn.commit()
+            logger.info("Saved prediction to history store.")
 
     def list_recent(self, limit: int = 20) -> list[PredictionHistoryItem]:
+        """Fetch the most recent predictions, up to the given limit."""
         safe_limit = max(1, min(limit, 100))
         with self._connect() as conn:
             rows = conn.execute(
@@ -61,18 +67,7 @@ class PredictionHistoryStore:
         items: list[PredictionHistoryItem] = []
         for row in rows:
             output_payload = json.loads(row["output_json"])
-            breakdown_payload = output_payload.get("breakdown", {})
-            if "predictor_type" not in breakdown_payload:
-                breakdown_payload["predictor_type"] = "legacy_heuristic"
-            if "coefficient_terms" not in breakdown_payload:
-                breakdown_payload["coefficient_terms"] = {}
-            if "predicted_before_floor" not in breakdown_payload:
-                breakdown_payload["predicted_before_floor"] = breakdown_payload.get(
-                    "weighted_model_sum_before_clamp", 0.0
-                )
-            if "floor_applied_to_manual_sum" not in breakdown_payload:
-                breakdown_payload["floor_applied_to_manual_sum"] = False
-                output_payload["breakdown"] = breakdown_payload
+            output_payload = self._patch_legacy_breakdown(output_payload)
 
             items.append(
                 PredictionHistoryItem(
@@ -82,7 +77,24 @@ class PredictionHistoryStore:
                     output=self._validate_output(output_payload),
                 )
             )
+        logger.info(f"Retrieved {len(items)} history items.")
         return items
+
+    @staticmethod
+    def _patch_legacy_breakdown(output_payload: dict) -> dict:
+        breakdown_payload = output_payload.get("breakdown", {})
+        if "predictor_type" not in breakdown_payload:
+            breakdown_payload["predictor_type"] = "legacy_heuristic"
+        if "coefficient_terms" not in breakdown_payload:
+            breakdown_payload["coefficient_terms"] = {}
+        if "predicted_before_floor" not in breakdown_payload:
+            breakdown_payload["predicted_before_floor"] = breakdown_payload.get(
+                "weighted_model_sum_before_clamp", 0.0
+            )
+        if "floor_applied_to_manual_sum" not in breakdown_payload:
+            breakdown_payload["floor_applied_to_manual_sum"] = False
+        output_payload["breakdown"] = breakdown_payload
+        return output_payload
 
     @staticmethod
     def _validate_output(output_payload: dict) -> ExpensePredictionResponse:

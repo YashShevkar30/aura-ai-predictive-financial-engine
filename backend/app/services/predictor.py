@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-
+import logging
 import numpy as np
 
 from app.schemas import (
@@ -10,24 +9,14 @@ from app.schemas import (
 )
 from app.services.ml_model import ensure_model, predict_with_contributions
 
-
-@dataclass(frozen=True)
-class ModelWeights:
-    bias: float = 180.0
-    income_factor: float = 0.26
-    rent_factor: float = 0.95
-    food_factor: float = 1.08
-    transport_factor: float = 1.02
-    entertainment_factor: float = 1.15
-    credit_factor: float = -0.08
-
+logger = logging.getLogger(__name__)
 
 class ExpensePredictor:
-    def __init__(self, weights: ModelWeights | None = None) -> None:
-        self.weights = weights or ModelWeights()
+    def __init__(self) -> None:
         self.model_payload = ensure_model()
 
     def predict(self, request: ExpensePredictionRequest) -> ExpensePredictionResponse:
+        """Run ML prediction on expense request."""
         manual_category_sum = (
             request.monthly_rent
             + request.monthly_food
@@ -50,10 +39,13 @@ class ExpensePredictor:
         suggested_budget_plan = self._suggested_budget_plan(request, savings_gap)
         recommendations = self._recommendations(request, predicted, projected_savings, savings_gap)
 
+        risk = self._risk_band(predicted, request.monthly_income)
+        logger.info(f"Prediction: income={request.monthly_income:.2f} expense={predicted:.2f} risk={risk}")
+
         return ExpensePredictionResponse(
             predicted_monthly_expense=round(predicted, 2),
             projected_monthly_savings=round(projected_savings, 2),
-            risk_band=self._risk_band(predicted, request.monthly_income),
+            risk_band=risk,
             savings_goal_status=savings_goal_status,
             savings_gap=round(savings_gap, 2),
             confidence=round(confidence, 3),
@@ -73,6 +65,7 @@ class ExpensePredictor:
 
     @staticmethod
     def _risk_band(predicted_expense: float, income: float) -> str:
+        """Calculate categorical risk band based on expense to income ratio."""
         if income <= 0:
             return "HIGH"
         ratio = predicted_expense / income
@@ -89,6 +82,7 @@ class ExpensePredictor:
         projected_savings: float,
         savings_gap: float,
     ) -> list[str]:
+        """Generate human-readable financial recommendations based on model output."""
         recommendations: list[str] = []
         expense_ratio = predicted_expense / max(request.monthly_income, 1)
 
@@ -138,6 +132,7 @@ class ExpensePredictor:
         return recommendations
 
     def _suggested_budget_plan(self, request: ExpensePredictionRequest, savings_gap: float) -> SuggestedBudgetPlan:
+        """Create a theoretical budget adjusting categories down to close the savings gap."""
         adjusted = {
             "monthly_rent": request.monthly_rent,
             "monthly_food": request.monthly_food,

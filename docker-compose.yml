@@ -7,7 +7,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - aura_history_data:/app
+      - aura_history_data:/app/data
 
   frontend:
     build:

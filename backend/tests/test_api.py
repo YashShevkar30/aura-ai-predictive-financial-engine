@@ -1,17 +1,19 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
+@pytest.fixture
+def client():
+    return TestClient(app)
 
-
-def test_health() -> None:
+def test_health(client) -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
 
 
-def test_prediction_contract() -> None:
+def test_prediction_contract(client) -> None:
     payload = {
         "monthly_income": 8500,
         "monthly_rent": 2400,
@@ -44,7 +46,7 @@ def test_prediction_contract() -> None:
     assert "income" in body["breakdown"]["coefficient_terms"]
 
 
-def test_compare_endpoint_returns_delta_and_better_scenario() -> None:
+def test_compare_endpoint_returns_delta_and_better_scenario(client) -> None:
     payload = {
         "scenario_a": {
             "monthly_income": 7000,
@@ -75,7 +77,7 @@ def test_compare_endpoint_returns_delta_and_better_scenario() -> None:
     assert "scenario_b_result" in body
 
 
-def test_history_endpoint_returns_recent_predictions() -> None:
+def test_history_endpoint_returns_recent_predictions(client) -> None:
     payload = {
         "monthly_income": 6000,
         "monthly_rent": 1800,
@@ -93,3 +95,55 @@ def test_history_endpoint_returns_recent_predictions() -> None:
     assert "items" in body
     assert isinstance(body["items"], list)
     assert len(body["items"]) >= 1
+
+# --- Edge Cases ---
+def test_minimum_income(client):
+    """Income just above 0 should still return valid prediction."""
+    payload = {
+        "monthly_income": 1,
+        "monthly_rent": 0, "monthly_food": 0,
+        "monthly_transport": 0, "monthly_entertainment": 0,
+        "savings_goal_monthly": 0, "credit_score": 300,
+    }
+    r = client.post("/predict", json=payload)
+    assert r.status_code == 200
+    assert r.json()["risk_band"] in {"LOW", "MEDIUM", "HIGH"}
+
+def test_max_credit_score(client):
+    """Credit score at ceiling (850)."""
+    payload = {
+        "monthly_income": 10000, "monthly_rent": 3000,
+        "monthly_food": 800, "monthly_transport": 400,
+        "monthly_entertainment": 600,
+        "savings_goal_monthly": 2000, "credit_score": 850,
+    }
+    r = client.post("/predict", json=payload)
+    assert r.status_code == 200
+    assert r.json()["confidence"] <= 0.95
+
+def test_zero_savings_goal(client):
+    """Zero savings goal → always ON_TRACK."""
+    payload = {
+        "monthly_income": 5000, "monthly_rent": 1500,
+        "monthly_food": 500, "monthly_transport": 200,
+        "monthly_entertainment": 300,
+        "savings_goal_monthly": 0, "credit_score": 700,
+    }
+    r = client.post("/predict", json=payload)
+    assert r.json()["savings_goal_status"] == "ON_TRACK"
+
+def test_invalid_credit_score_rejected(client):
+    """Credit score below 300 should be rejected by Pydantic."""
+    payload = {
+        "monthly_income": 5000, "monthly_rent": 1500,
+        "monthly_food": 500, "monthly_transport": 200,
+        "monthly_entertainment": 300,
+        "savings_goal_monthly": 500, "credit_score": 100,
+    }
+    r = client.post("/predict", json=payload)
+    assert r.status_code == 422
+
+def test_dataset_sample(client):
+    r = client.get("/dataset/sample?size=5")
+    assert r.status_code == 200
+    assert len(r.json()["rows"]) == 5

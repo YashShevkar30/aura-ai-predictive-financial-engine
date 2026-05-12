@@ -1,4 +1,4 @@
-from app.services.ml_model import train_and_save_model
+from app.services.training import train_and_save_model
 
 
 if __name__ == "__main__":
