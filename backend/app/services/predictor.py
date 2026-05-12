@@ -8,6 +8,7 @@ from app.schemas import (
     PredictionBreakdown,
     SuggestedBudgetPlan,
 )
+from app.services.ml_model import ensure_model, predict_with_contributions
 
 
 @dataclass(frozen=True)
@@ -24,25 +25,24 @@ class ModelWeights:
 class ExpensePredictor:
     def __init__(self, weights: ModelWeights | None = None) -> None:
         self.weights = weights or ModelWeights()
+        self.model_payload = ensure_model()
 
     def predict(self, request: ExpensePredictionRequest) -> ExpensePredictionResponse:
-        w = self.weights
         manual_category_sum = (
             request.monthly_rent
             + request.monthly_food
             + request.monthly_transport
             + request.monthly_entertainment
         )
-        weighted_model_sum_before_clamp = (
-            w.bias
-            + (w.income_factor * request.monthly_income)
-            + (w.rent_factor * request.monthly_rent)
-            + (w.food_factor * request.monthly_food)
-            + (w.transport_factor * request.monthly_transport)
-            + (w.entertainment_factor * request.monthly_entertainment)
-            + (w.credit_factor * request.credit_score)
+        model_adjustment_prediction, components, coefficients = predict_with_contributions(
+            self.model_payload, request
         )
-        predicted = float(np.clip(weighted_model_sum_before_clamp, 0, request.monthly_income * 1.5))
+        weighted_model_sum_before_clamp = manual_category_sum + model_adjustment_prediction
+        model_predicted_before_floor = float(
+            np.clip(weighted_model_sum_before_clamp, 0, request.monthly_income * 1.5)
+        )
+        floor_applied = model_predicted_before_floor < manual_category_sum
+        predicted = max(model_predicted_before_floor, manual_category_sum)
         projected_savings = max(request.monthly_income - predicted, 0.0)
         savings_goal_status = "ON_TRACK" if projected_savings >= request.savings_goal_monthly else "BEHIND_GOAL"
         savings_gap = max(request.savings_goal_monthly - projected_savings, 0.0)
@@ -60,18 +60,14 @@ class ExpensePredictor:
             recommendations=recommendations,
             suggested_budget_plan=suggested_budget_plan,
             breakdown=PredictionBreakdown(
+                predictor_type="linear_regression_ml",
                 manual_category_sum=round(manual_category_sum, 2),
                 weighted_model_sum_before_clamp=round(weighted_model_sum_before_clamp, 2),
+                predicted_before_floor=round(model_predicted_before_floor, 2),
+                floor_applied_to_manual_sum=floor_applied,
                 projected_minus_manual_delta=round(predicted - manual_category_sum, 2),
-                components={
-                    "bias": round(w.bias, 2),
-                    "income_term": round(w.income_factor * request.monthly_income, 2),
-                    "rent_term": round(w.rent_factor * request.monthly_rent, 2),
-                    "food_term": round(w.food_factor * request.monthly_food, 2),
-                    "transport_term": round(w.transport_factor * request.monthly_transport, 2),
-                    "entertainment_term": round(w.entertainment_factor * request.monthly_entertainment, 2),
-                    "credit_adjustment_term": round(w.credit_factor * request.credit_score, 2),
-                },
+                components=components,
+                coefficient_terms=coefficients,
             ),
         )
 

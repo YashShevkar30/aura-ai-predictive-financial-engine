@@ -12,10 +12,14 @@ class ExpensePredictionRequest(BaseModel):
 
 
 class PredictionBreakdown(BaseModel):
+    predictor_type: str
     manual_category_sum: float
     weighted_model_sum_before_clamp: float
+    predicted_before_floor: float
+    floor_applied_to_manual_sum: bool
     projected_minus_manual_delta: float
     components: dict[str, float]
+    coefficient_terms: dict[str, float]
 
 
 class SuggestedBudgetPlan(BaseModel):

@@ -1,35 +1,103 @@
 body {
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
-  background: linear-gradient(180deg, #eef4ff 0%, #f7f9fc 40%, #f7f9fc 100%);
+  background: radial-gradient(circle at top right, #dbeafe 0%, #eef4ff 24%, #f7f9fc 68%);
   color: #0f172a;
 }
 
 .container {
-  max-width: 980px;
-  margin: 2rem auto;
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 20px 36px;
+}
+
+.hero {
+  margin-bottom: 18px;
+  border-radius: 20px;
+  padding: 28px;
+  background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 65%, #0284c7 100%);
+  color: #f8fafc;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
 }
 
 .hero h1 {
   margin: 0;
-  font-size: 2.25rem;
+  font-size: clamp(1.8rem, 2.8vw, 2.4rem);
   letter-spacing: -0.02em;
 }
 
 .hero p {
-  margin: 0.65rem 0 1.25rem;
-  color: #475569;
-  max-width: 850px;
+  margin: 0.8rem 0 0;
+  color: #dbeafe;
+  max-width: 940px;
 }
 
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.hero-badges span {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #eff6ff;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.95fr;
+  gap: 16px;
+}
+
+.card {
+  margin-top: 0;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.quick-help {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+}
+
+.result-card {
+  background: #f8faff;
+}
 
 .muted {
   color: #64748b;
   margin-top: 0;
+}
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.preset-button {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.preset-button:hover {
+  background: #dbeafe;
 }
 
 form {
@@ -46,8 +114,8 @@ label {
 
 input {
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 0.5rem;
+  border-radius: 8px;
+  padding: 0.58rem;
 }
 
 button {
@@ -55,8 +123,8 @@ button {
   border: 0;
   background: #2563eb;
   color: white;
-  border-radius: 8px;
-  padding: 0.7rem;
+  border-radius: 10px;
+  padding: 0.74rem;
   cursor: pointer;
   font-weight: 600;
 }
@@ -65,51 +133,40 @@ button:hover {
   background: #1d4ed8;
 }
 
-.card {
-  margin-top: 1.1rem;
-  border: 1px solid #dbeafe;
-  border-radius: 14px;
-  background: #f8fbff;
-  padding: 1rem 1.1rem;
-}
-
-.result-card {
-  background: #f8faff;
-}
-
 .error {
   color: #dc2626;
   background: #fee2e2;
   border: 1px solid #fecaca;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0.6rem 0.8rem;
+  margin-top: 10px;
 }
 
 .info-note {
   color: #1d4ed8;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0.55rem 0.75rem;
   margin: 0.35rem 0 0.7rem;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.7rem;
 }
 
 .stat-tile {
   border: 1px solid #dbeafe;
   background: #ffffff;
-  border-radius: 10px;
-  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  padding: 0.68rem 0.75rem;
 }
 
 .stat-label {
   color: #64748b;
-  font-size: 0.85rem;
+  font-size: 0.83rem;
   display: block;
   margin-bottom: 0.2rem;
 }
@@ -154,10 +211,104 @@ button:hover {
   border-color: #a5b4fc;
 }
 
+.risk-meter-wrap {
+  margin: 12px 0 6px;
+}
+
+.risk-meter-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.risk-meter {
+  height: 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.risk-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e 0%, #f59e0b 60%, #ef4444 100%);
+}
+
+.detail-block {
+  margin: 12px 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.detail-block summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.formula-panel {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.formula-title {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+  font-weight: 700;
+}
+
+.formula {
+  font-family: "Times New Roman", Georgia, serif;
+  margin: 0;
+  font-size: 1.03rem;
+  color: #0f172a;
+  line-height: 1.5;
+}
+
 .breakdown-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.35rem 1rem;
+}
+
+.coef-card {
+  margin-top: 0.5rem;
+  border: 1px dashed #93c5fd;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+}
+
+.coef-card p {
+  margin-top: 0;
+}
+
+.coef-card ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1rem;
+}
+
+.coef-card li {
+  margin-bottom: 0.25rem;
+}
+
+.model-meta-strip {
+  margin-top: 0.6rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 0.9rem;
 }
 
 .budget-table,
@@ -186,7 +337,7 @@ button:hover {
 .compare-results {
   margin-top: 0.8rem;
   border: 1px solid #cfe0ff;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #ffffff;
   padding: 0.6rem 0.8rem;
 }
@@ -208,7 +359,7 @@ button:hover {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(30px, 1fr);
-  align-items: end;
+  align-items: stretch;
   gap: 0.45rem;
 }
 
@@ -217,6 +368,7 @@ button:hover {
   flex-direction: column;
   justify-content: end;
   align-items: center;
+  height: 100%;
   min-width: 0;
 }
 
@@ -235,16 +387,33 @@ button:hover {
   white-space: nowrap;
 }
 
+@media (max-width: 1024px) {
+  .layout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-help {
+    position: static;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 820px) {
   .container {
-    margin: 1rem;
-    padding: 1rem;
+    padding: 14px;
+  }
+
+  .hero {
+    padding: 20px;
   }
 
   form,
   .compare-grid,
-  .stats-grid,
-  .breakdown-grid {
+  .breakdown-grid,
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 

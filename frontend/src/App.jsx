@@ -28,6 +28,18 @@ export default function App() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const fields = useMemo(() => Object.keys(defaultForm), []);
+  const fieldLabels = useMemo(
+    () => ({
+      monthly_income: "Monthly Income",
+      monthly_rent: "Monthly Rent",
+      monthly_food: "Monthly Food",
+      monthly_transport: "Monthly Transport",
+      monthly_entertainment: "Monthly Entertainment",
+      savings_goal_monthly: "Savings Goal (Monthly)",
+      credit_score: "Credit Score",
+    }),
+    [],
+  );
   const chartPoints = useMemo(() => {
     if (!historyItems.length) {
       return [];
@@ -108,6 +120,24 @@ export default function App() {
     return `$${Number(value).toFixed(2)}`;
   }
 
+  function formatCoef(value) {
+    return Number(value ?? 0).toFixed(4);
+  }
+
+  function signedCoef(value) {
+    const numeric = Number(value ?? 0);
+    return `${numeric >= 0 ? "+" : "-"} ${Math.abs(numeric).toFixed(4)}`;
+  }
+
+  function projectionDeltaMessage(deltaValue) {
+    const delta = Number(deltaValue ?? 0);
+    const absDelta = formatCurrency(Math.abs(delta));
+    if (delta >= 0) {
+      return `You may spend about ${absDelta} above your entered category budget in the upcoming month.`;
+    }
+    return `You may spend about ${absDelta} below your entered category budget in the upcoming month.`;
+  }
+
   function riskClass(riskBand) {
     if (riskBand === "LOW") {
       return "risk-pill risk-low";
@@ -118,39 +148,134 @@ export default function App() {
     return "risk-pill risk-high";
   }
 
+  function applyPreset(preset) {
+    setForm((prev) => ({ ...prev, ...preset }));
+  }
+
   return (
     <main className="container">
       <header className="hero">
         <h1>Aura Predictive Financial Engine</h1>
         <p>
-          Aura helps users estimate monthly expenses, evaluate savings goals,
-          compare financial scenarios, and track trend history over time.
+          A modern financial decision dashboard to forecast expenses, evaluate
+          savings goals, compare scenarios, and explain model outputs with
+          transparent math.
         </p>
+        <div className="hero-badges">
+          <span>Predictive ML</span>
+          <span>Scenario Compare</span>
+          <span>Goal Optimization</span>
+          <span>Trend Tracking</span>
+        </div>
       </header>
 
-      <section className="card">
-        <h2>Run Prediction</h2>
-        <p className="muted">
-          Enter your profile in Scenario A and run the model.
-        </p>
-        <form onSubmit={onSubmit}>
-        {fields.map((field) => (
-          <label key={field}>
-            <span>{field.replaceAll("_", " ")}</span>
-            <input
-              type="number"
-              value={form[field]}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, [field]: Number(event.target.value) }))
+      <section className="layout-grid">
+        <div className="card">
+          <h2>Scenario A · Run Prediction</h2>
+          <p className="muted">
+            Enter your profile and generate expense forecast with decision
+            guidance.
+          </p>
+
+          <div className="preset-row">
+            <button
+              className="preset-button"
+              onClick={() =>
+                applyPreset({
+                  monthly_income: 4500,
+                  monthly_rent: 1500,
+                  monthly_food: 480,
+                  monthly_transport: 220,
+                  monthly_entertainment: 260,
+                  savings_goal_monthly: 900,
+                  credit_score: 680,
+                })
               }
-              required
-            />
-          </label>
-        ))}
-        <button disabled={loading} type="submit">
-          {loading ? "Predicting..." : "Run Prediction"}
-        </button>
-        </form>
+              type="button"
+            >
+              Starter Profile
+            </button>
+            <button
+              className="preset-button"
+              onClick={() =>
+                applyPreset({
+                  monthly_income: 7000,
+                  monthly_rent: 2200,
+                  monthly_food: 650,
+                  monthly_transport: 320,
+                  monthly_entertainment: 430,
+                  savings_goal_monthly: 1500,
+                  credit_score: 730,
+                })
+              }
+              type="button"
+            >
+              Balanced Profile
+            </button>
+            <button
+              className="preset-button"
+              onClick={() =>
+                applyPreset({
+                  monthly_income: 10000,
+                  monthly_rent: 2900,
+                  monthly_food: 820,
+                  monthly_transport: 500,
+                  monthly_entertainment: 650,
+                  savings_goal_monthly: 2600,
+                  credit_score: 780,
+                })
+              }
+              type="button"
+            >
+              Growth Profile
+            </button>
+          </div>
+
+          <form onSubmit={onSubmit}>
+            {fields.map((field) => (
+              <label key={field}>
+                <span>{fieldLabels[field]}</span>
+                <input
+                  type="number"
+                  value={form[field]}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, [field]: Number(event.target.value) }))
+                  }
+                  required
+                />
+              </label>
+            ))}
+            <button disabled={loading} type="submit">
+              {loading ? "Predicting..." : "Run Prediction"}
+            </button>
+          </form>
+        </div>
+
+        <div className="card quick-help">
+          <h2>How Aura Decides</h2>
+          <p className="muted">
+            Aura predicts expense, then applies goal and risk decision logic for
+            realistic recommendations.
+          </p>
+          <div className="formula-panel">
+            <p className="formula-title">Core Prediction Equation</p>
+            <p className="formula">
+              Ê = β₀ + β₁·Income + β₂·Rent + β₃·Food + β₄·Transport + β₅·Entertainment + β₆·CreditScore
+            </p>
+          </div>
+          <div className="formula-panel">
+            <p className="formula-title">Realism Constraint</p>
+            <p className="formula">
+              E<sub>final</sub> = max(E<sub>predicted</sub>, E<sub>manual-category-sum</sub>)
+            </p>
+          </div>
+          <div className="formula-panel">
+            <p className="formula-title">Risk Ratio</p>
+            <p className="formula">
+              R = E<sub>final</sub> / MonthlyIncome
+            </p>
+          </div>
+        </div>
       </section>
 
       {error && <p className="error">{error}</p>}
@@ -158,6 +283,11 @@ export default function App() {
       {result && (
         <section className="card result-card">
           <h2>Prediction Summary</h2>
+          <p className="muted">
+            Based on your current financial profile and learned historical patterns,
+            the model estimates your upcoming-month expense is likely to be
+            higher/lower than your entered category baseline.
+          </p>
           <div className="stats-grid">
             <div className="stat-tile">
               <span className="stat-label">Projected expense</span>
@@ -180,74 +310,159 @@ export default function App() {
             <span className={riskClass(result.risk_band)}>Risk: {result.risk_band}</span>
             <span className="confidence-pill">Confidence: {result.confidence}</span>
           </div>
-          <hr />
-          <h3>How to read this</h3>
-          <p>Expense ratio: {(expenseRatio * 100).toFixed(1)}% of monthly income.</p>
-          <p>{ratioExplanation(expenseRatio)}</p>
-          <p>
-            Confidence is a model certainty score (0.7 to 0.95 in this prototype),
-            and tends to be higher with stronger credit inputs.
-          </p>
-          <h3>Actionable recommendations</h3>
-          <ul>
-            {result.recommendations.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-          <h3>Breakdown math panel</h3>
-          <p>
-            Manual category sum (rent + food + transport + entertainment):{" "}
-            {formatCurrency(result.breakdown.manual_category_sum)}
-          </p>
-          <p>
-            Weighted model sum before clamp:{" "}
-            {formatCurrency(result.breakdown.weighted_model_sum_before_clamp)}
-          </p>
-          <p>
-            Projection delta vs manual sum:{" "}
-            {formatCurrency(result.breakdown.projected_minus_manual_delta)}
-          </p>
-          <div className="breakdown-grid">
-            {Object.entries(result.breakdown.components).map(([name, value]) => (
-              <p key={name}>
-                <strong>{name.replaceAll("_", " ")}:</strong> {formatCurrency(value)}
-              </p>
-            ))}
+          <div className="risk-meter-wrap">
+            <div className="risk-meter-label">
+              <span>Expense Ratio</span>
+              <strong>{(expenseRatio * 100).toFixed(1)}%</strong>
+            </div>
+            <div className="risk-meter">
+              <div
+                className="risk-meter-fill"
+                style={{ width: `${Math.min(expenseRatio * 100, 100)}%` }}
+              />
+            </div>
           </div>
-          <h3>Suggested budget plan</h3>
-          {result.savings_goal_status === "ON_TRACK" && (
-            <p className="info-note">
-              No budget changes needed — you already meet your savings goal.
+          <hr />
+          <details open className="detail-block">
+            <summary>How to read this output</summary>
+            <p>{ratioExplanation(expenseRatio)}</p>
+            <p>
+              Confidence is a model certainty score (0.7 to 0.95 in this
+              prototype), and tends to be higher with stronger credit inputs.
             </p>
-          )}
-          <table className="budget-table">
-            <tbody>
-              <tr>
-                <td>Rent</td>
-                <td>{formatCurrency(result.suggested_budget_plan.monthly_rent)}</td>
-              </tr>
-              <tr>
-                <td>Food</td>
-                <td>{formatCurrency(result.suggested_budget_plan.monthly_food)}</td>
-              </tr>
-              <tr>
-                <td>Transport</td>
-                <td>{formatCurrency(result.suggested_budget_plan.monthly_transport)}</td>
-              </tr>
-              <tr>
-                <td>Entertainment</td>
-                <td>{formatCurrency(result.suggested_budget_plan.monthly_entertainment)}</td>
-              </tr>
-              <tr>
-                <td><strong>Total suggested category spend</strong></td>
-                <td>
-                  <strong>
-                    {formatCurrency(result.suggested_budget_plan.expected_total_category_spend)}
-                  </strong>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          </details>
+
+          <details open className="detail-block">
+            <summary>Actionable recommendations</summary>
+            <ul>
+              {result.recommendations.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </details>
+
+          <details className="detail-block">
+            <summary>Breakdown math panel</summary>
+            {result.breakdown.floor_applied_to_manual_sum && (
+              <p className="info-note">
+                Model output was below your declared category total, so projection
+                was adjusted up to manual spend for realism.
+              </p>
+            )}
+            <div className="formula-panel">
+              <p className="formula">
+                E<sub>final</sub> = max(E<sub>predicted</sub>, E<sub>manual</sub>)
+              </p>
+            </div>
+            <p>
+              Manual category sum:{" "}
+              {formatCurrency(result.breakdown.manual_category_sum)}
+            </p>
+            <p>
+              Model sum before clamp:{" "}
+              {formatCurrency(result.breakdown.weighted_model_sum_before_clamp)}
+            </p>
+            <p>
+              Predicted before floor:{" "}
+              {formatCurrency(result.breakdown.predicted_before_floor)}
+            </p>
+            <p>
+              Delta vs manual sum:{" "}
+              {formatCurrency(result.breakdown.projected_minus_manual_delta)}
+            </p>
+            <p className="info-note">
+              {projectionDeltaMessage(result.breakdown.projected_minus_manual_delta)}
+            </p>
+            <div className="breakdown-grid">
+              {Object.entries(result.breakdown.components).map(([name, value]) => (
+                <p key={name}>
+                  <strong>{name.replaceAll("_", " ")}:</strong>{" "}
+                  {formatCurrency(value)}
+                </p>
+              ))}
+            </div>
+          </details>
+
+          <details open className="detail-block">
+            <summary>Suggested budget plan</summary>
+            {result.savings_goal_status === "ON_TRACK" && (
+              <p className="info-note">
+                No budget changes needed — you already meet your savings goal.
+              </p>
+            )}
+            <table className="budget-table">
+              <tbody>
+                <tr>
+                  <td>Rent</td>
+                  <td>{formatCurrency(result.suggested_budget_plan.monthly_rent)}</td>
+                </tr>
+                <tr>
+                  <td>Food</td>
+                  <td>{formatCurrency(result.suggested_budget_plan.monthly_food)}</td>
+                </tr>
+                <tr>
+                  <td>Transport</td>
+                  <td>{formatCurrency(result.suggested_budget_plan.monthly_transport)}</td>
+                </tr>
+                <tr>
+                  <td>Entertainment</td>
+                  <td>{formatCurrency(result.suggested_budget_plan.monthly_entertainment)}</td>
+                </tr>
+                <tr>
+                  <td><strong>Total suggested category spend</strong></td>
+                  <td>
+                    <strong>
+                      {formatCurrency(
+                        result.suggested_budget_plan.expected_total_category_spend,
+                      )}
+                    </strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </details>
+
+          <details className="detail-block">
+            <summary>Model coefficient interpretation</summary>
+            <div className="coef-card">
+              <p className="formula">
+                Ê = {formatCoef(result.breakdown.coefficient_terms.bias)}
+                {" "}
+                {signedCoef(result.breakdown.coefficient_terms.income)}·Income
+                {" "}
+                {signedCoef(result.breakdown.coefficient_terms.rent)}·Rent
+                {" "}
+                {signedCoef(result.breakdown.coefficient_terms.food)}·Food
+                {" "}
+                {signedCoef(result.breakdown.coefficient_terms.transport)}·Transport
+                {" "}
+                {signedCoef(result.breakdown.coefficient_terms.entertainment)}·Entertainment
+                {" "}
+                {signedCoef(result.breakdown.coefficient_terms.credit_score)}·CreditScore
+              </p>
+              <ul>
+                <li>
+                  <strong>Income ({formatCoef(result.breakdown.coefficient_terms.income)}):</strong>{" "}
+                  higher income changes projected spend by this learned weight.
+                </li>
+                <li>
+                  <strong>Category terms:</strong> rent/food/transport/entertainment
+                  represent contribution direction and magnitude in the fitted model.
+                </li>
+                <li>
+                  <strong>Credit score ({formatCoef(result.breakdown.coefficient_terms.credit_score)}):</strong>{" "}
+                  stronger credit can reduce projected expense if coefficient is negative.
+                </li>
+                <li>
+                  <strong>Bias ({formatCoef(result.breakdown.coefficient_terms.bias)}):</strong>{" "}
+                  baseline model offset before feature terms.
+                </li>
+              </ul>
+              <div className="model-meta-strip">
+                <strong>Model used:</strong> Linear Regression / Ridge baseline
+              </div>
+            </div>
+          </details>
         </section>
       )}
 

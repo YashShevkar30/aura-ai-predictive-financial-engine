@@ -3,14 +3,15 @@
 Aura is a full-stack SaaS prototype combining a Python ML API with a React dashboard to deliver real-time financial expense predictions.
 
 ## Stack
-- Backend: FastAPI, NumPy, SQLite, Pytest
+- Backend: FastAPI, NumPy, scikit-learn, joblib, SQLite, Pytest
 - Frontend: React, Vite
 - CI: GitHub Actions
 - Containers: Docker, Docker Compose
 
 ## Architecture
 - `backend/app/main.py`: API contracts, prediction orchestration, compare flow, history API.
-- `backend/app/services/predictor.py`: deterministic predictive model logic + actionable budget plan.
+- `backend/app/services/predictor.py`: ML inference + decision-support logic + actionable budget plan.
+- `backend/app/services/ml_model.py`: model training/loading, feature transformation, and contribution extraction.
 - `backend/app/services/history_store.py`: SQLite persistence for prediction history.
 - `backend/app/services/data.py`: synthetic financial dataset generation.
 - `frontend/src/App.jsx`: prediction UI, breakdown math panel, scenario compare, history table.
@@ -38,6 +39,11 @@ npm run dev
 ```bash
 PYTHONPATH=backend pytest backend/tests -q
 ```
+
+## ML Training Data
+- Primary source: `Expenses Data Set.csv` (Kaggle-style transaction dataset) if available at `/Users/spartan/Downloads/Expenses Data Set.csv`.
+- If dataset is unavailable, the app falls back to synthetic training data.
+- Model training/evaluation metadata is stored with the model artifact (`mae`, `rmse`, train/test rows).
 
 ## API Endpoints
 - `POST /predict` - run a prediction, return risk + savings + recommendations + breakdown.

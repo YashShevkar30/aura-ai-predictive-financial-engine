@@ -35,8 +35,13 @@ def test_prediction_contract() -> None:
     assert "suggested_budget_plan" in body
     assert body["suggested_budget_plan"]["expected_total_category_spend"] >= 0
     assert "breakdown" in body
+    assert body["breakdown"]["predictor_type"] == "linear_regression_ml"
     assert body["breakdown"]["manual_category_sum"] >= 0
+    assert body["breakdown"]["predicted_before_floor"] >= 0
+    assert isinstance(body["breakdown"]["floor_applied_to_manual_sum"], bool)
+    assert body["predicted_monthly_expense"] >= body["breakdown"]["manual_category_sum"]
     assert "income_term" in body["breakdown"]["components"]
+    assert "income" in body["breakdown"]["coefficient_terms"]
 
 
 def test_compare_endpoint_returns_delta_and_better_scenario() -> None:
