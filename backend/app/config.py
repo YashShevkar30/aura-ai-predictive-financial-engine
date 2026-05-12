@@ -12,9 +12,12 @@ DATASET_PATH = Path(os.getenv("AURA_DATASET_PATH", ""))
 MODEL_SCHEMA_VERSION = 6
 
 # -- CORS --
+_extra_origins = os.getenv("AURA_CORS_ORIGINS", "").split(",")
 CORS_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://aura-ai-predictive-financial-engine.vercel.app",
+    *[o.strip() for o in _extra_origins if o.strip()],
 ]
 
 # -- Logging --
